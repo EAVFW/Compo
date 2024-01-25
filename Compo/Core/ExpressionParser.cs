@@ -38,19 +38,23 @@ public class ExpressionParser
         Try(Terminal));*/
 
     private static Parser<char, Node> function = null!;
+    private static Parser<char, Node> expression = null!;
 
     public ExpressionParser()
     {
+        // TODO: Figure out of to remove the where clause
+        // assignees: thygesteffensen
         function =
-            Map((_, functionName, args, _) => (Node)new FunctionNode(functionName, args.ToList()),
-                Char('@'),
+            Map((functionName, args, _) => (Node)new FunctionNode(functionName, args.Where(x => x != null!).ToList()),
                 AnyCharExcept('(').ManyString().Before(_openParen),
                 Try(Terminal)
                     .Or(Try(Rec(() => function)))
-                    .Or(SkipWhitespaces.Select(_ => (Node)new ValueNode<int>(0)))
+                    .Or(SkipWhitespaces.Select(_ => (Node)null!))
                     .Between(Whitespaces.IgnoreResult())
                     .Separated(_comma),
                 _closeParen);
+
+        expression = Map((_, func) => func, Tok('@'), function);
     }
 
     // TODO: Consider just returning the
@@ -61,7 +65,7 @@ public class ExpressionParser
     /// <returns></returns>
     public Node BuildAst(string input)
     {
-        var parseResult = function.Parse(input);
+        var parseResult = expression.Parse(input);
 
         if (!parseResult.Success)
         {
