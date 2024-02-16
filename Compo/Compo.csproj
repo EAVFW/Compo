@@ -11,6 +11,8 @@
 
         <Authurs>Thyge Skødt Steffensen</Authurs>
         <Company>EAVFW</Company>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <ItemGroup>
