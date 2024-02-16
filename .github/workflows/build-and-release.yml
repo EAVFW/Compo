@@ -73,5 +73,5 @@ jobs:
         if: ${{ env.RELEASE_VERSION }}
 
       - name: Release to GitHub and NuGet
-        working-directory: .\\.github\\workflows
+        working-directory: ./.github/workflows
         run: npx semantic-release
