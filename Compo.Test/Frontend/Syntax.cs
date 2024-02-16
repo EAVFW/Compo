@@ -2,7 +2,7 @@ namespace Compo.Test.Frontend;
 
 public class Trees
 {
-    private class FrontendTestInput : TheoryData<string, FunctionNode>
+    private class FrontendTestInput : TheoryData<string, Node>
     {
         public FrontendTestInput()
         {
@@ -28,22 +28,34 @@ public class Trees
             Add("@composite(function())", new FunctionNode("composite", [new FunctionNode("function", [])]));
             Add("@composite(function(1))",
                 new FunctionNode("composite", [new FunctionNode("function", [new ValueNode<int>(1)])]));
-
             Add("@composite(function(1, 2))",
                 new FunctionNode("composite",
                     [new FunctionNode("function", [new ValueNode<int>(1), new ValueNode<int>(2)])]));
-
             Add("@composite(function(1, empty()))",
                 new FunctionNode("composite",
                     [new FunctionNode("function", [new ValueNode<int>(1), new FunctionNode("empty", [])])]));
+            Add("@object()", new FunctionNode("object", []));
+            Add("@object()[1]",
+                new AccessNode(new FunctionNode("object", []), new ValueNode<int>(1)));
+            Add("@object()[abc()]", new AccessNode(new FunctionNode("object", []), new FunctionNode("abc", [])));
+            Add("@object()['abc']", new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc")));
+            Add("@object()['abc']['abc']",
+                new AccessNode(
+                    new AccessNode(
+                        new FunctionNode("object", []), new ValueNode<string>("abc")),
+                    new ValueNode<string>("abc")));
+            Add("@object()[abc()['abc']]", new AccessNode(
+                new FunctionNode("object", []),
+                new AccessNode(new FunctionNode("abc", []), new ValueNode<string>("abc"))));
         }
     }
 
     [Theory]
     [ClassData(typeof(FrontendTestInput))]
-    public void Test(string input, FunctionNode expected)
+    public void Test(string input, Node expected)
     {
         var actual = new ExpressionParser().BuildAst(input);
-        actual.Should().BeEquivalentTo(expected);
+
+        actual.Should().BeEquivalentTo(expected, options => options.RespectingRuntimeTypes());
     }
 }
