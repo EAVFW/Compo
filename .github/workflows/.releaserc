@@ -15,7 +15,7 @@ plugins:
 
   - - "@semantic-release/github"
     - assets:
-        - path: ../../artifacts/Compo.*.nupkg
+        - path: ../../artifacts/EAVFW.Compo.*.nupkg
           label: Compo
 
   - - "@semantic-release/exec"

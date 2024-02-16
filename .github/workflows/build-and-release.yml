@@ -61,9 +61,7 @@ jobs:
 
       - name: Dry Run Semantic to get next version number
         working-directory: ./.github/workflows
-
-        run: |
-          npx semantic-release --dry-run --no-ci
+        run: npx semantic-release --dry-run --no-ci
 
       - name: Cleaning
         run: dotnet clean --configuration Release
