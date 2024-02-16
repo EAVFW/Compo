@@ -4,6 +4,9 @@
     prerelease: dev
 
 plugins:
+  - - "@semantic-release/exec"
+    - verifyReleaseCmd: "echo  \"RELEASE_VERSION=${nextRelease.version}\" >> $GITHUB_ENV"
+
   - - "@semantic-release/commit-analyzer"
     - preset: conventionalcommits
 
