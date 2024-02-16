@@ -54,7 +54,7 @@ public class Trees
     [ClassData(typeof(FrontendTestInput))]
     public void Test(string input, Node expected)
     {
-        var actual = new ExpressionParser().BuildAst(input);
+        var actual = new ExpressionParser().BuildAst(input).Value;
 
         actual.Should().BeEquivalentTo(expected, options => options.RespectingRuntimeTypes());
     }

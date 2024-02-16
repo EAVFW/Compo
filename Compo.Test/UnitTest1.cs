@@ -26,7 +26,7 @@ public class UnitTest1
         var expressionEvaluator = serviceProvider.GetRequiredService<IExpressionEvaluator>();
 
         var engine = new ExpressionParser();
-        var actual = expressionEvaluator.Evaluate(engine.BuildAst(expression));
+        var actual = expressionEvaluator.Evaluate(engine.BuildAst(expression).Value!);
 
         actual.Should().BeEquivalentTo(result);
     }

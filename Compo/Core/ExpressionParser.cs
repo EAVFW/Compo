@@ -1,6 +1,5 @@
 using Pidgin;
 using static Pidgin.Parser;
-using Char = System.Char;
 
 namespace Compo;
 
@@ -47,41 +46,9 @@ public class ExpressionParser
 
     public ExpressionParser()
     {
-        // TODO: Figure out of to remove the where clause
-        // assignees: thygesteffensen
-
-        /*indexedFunction = Map((_, _) => (Node)new AccessNode(null!, null!), Rec(() =>
-                   Terminal.IgnoreResult().Or(AnyCharExcept('(', ']', '[').ManyString().Then(_openParen).Then(_closeParen)
-                       .IgnoreResult())),
-                   Lookahead(Char(']').IgnoreResult()).Or(Try(Parser<char>.End).IgnoreResult()
-                   .Or(Try(
-                       Try(Terminal).Or(Rec(() => indexedFunction)).Between(_openBracket, _closeBracket).IgnoreResult())))
-           )*/
-
-        /*indexedFunction = Map((_, _) => (Node)new AccessNode(null!, null!), Rec(() =>
-                Terminal.IgnoreResult().Or(Rec(() => function).IgnoreResult())),
-                Lookahead(Char(']').IgnoreResult()).Or(Try(Parser<char>.End).IgnoreResult()
-                .Or(Try(
-                    Try(Terminal).Or(Rec(() => indexedFunction)).Between(_openBracket, _closeBracket).IgnoreResult())))
-        );
-
-        function =
-            Map((functionName, args, _) => (Node)new FunctionNode(functionName, args.Where(x => x != null!).ToList()),
-                AnyCharExcept('(', ']', '[').ManyString().Before(_openParen),
-                Try(Terminal)
-                    .Or(Try(Rec(() => indexedFunction)))
-                    .Or(SkipWhitespaces.Select(_ => (Node)null!))
-                    .Between(Whitespaces.IgnoreResult())
-                    .Separated(_comma),
-                _closeParen);
-
-        expression = Map((_, func, _) => func, Tok('@'), indexedFunction, Parser<char>.End);*/
-
         function =
             Map(
                 (functionName, args, access) =>
-                    /*(Node)new AccessNode(new FunctionNode(functionName, args.Where(x => x != null!).ToList()),
-                        access.FirstOrDefault()!)*/
                     access.Aggregate((Node)new FunctionNode(functionName, args.Where(x => x != null!).ToList()),
                         (node, node1) => new AccessNode(node, node1)),
                 AnyCharExcept('(', ']', '[').ManyString().Before(_openParen),
@@ -96,13 +63,12 @@ public class ExpressionParser
         expression = Map((_, func, _) => func, Tok('@'), function, Parser<char>.End);
     }
 
-    // TODO: Consider just returning the
     /// <summary>
     /// Build a Function AST from the given string
     /// </summary>
     /// <param name="input"></param>
     /// <returns></returns>
-    public Node BuildAst(string input)
+    public ParseResult BuildAst(string input)
     {
         var parseResult = expression.Parse(input);
         var t = Parser<char>.End;
@@ -112,6 +78,6 @@ public class ExpressionParser
             throw new Exception(parseResult.Error!.RenderErrorMessage());
         }
 
-        return parseResult.Value;
+        return new ParseResult(parseResult);
     }
 }
