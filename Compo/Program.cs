@@ -3,6 +3,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Compo;
 using Compo.Functions.Math;
+using Pidgin;
 
 var services = new ServiceCollection();
 
@@ -61,6 +62,18 @@ else
     Console.WriteLine("Unable to invoke the function.");
 }
 
+var a = Parser.Char('a');
+var b = Parser.Char('b');
+
+Parser<char, Node> m = null!;
+
+m = Parser.Map(
+    (arg1, arg2)
+        => (Node)new AccessNode(arg1, new ValueNode<char>(arg2)),
+    Parser.Rec(() => m).Or(a.Select(x => (Node)new ValueNode<char>(x))),
+    b);
+
+Console.WriteLine(m.Parse("aaab"));
 
 // var objs = new object[]{2d, 2d};
 
@@ -71,10 +84,3 @@ else
 // multFunction.FunctionType.
 
 // var functionType = typeof(IFunction<,>).MakeGenericType(p1.GetType(), typeof(double));
-
-
-
-
-
-
-
