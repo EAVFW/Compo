@@ -19,4 +19,4 @@ plugins:
           label: Compo
 
   - - "@semantic-release/exec"
-    - publishCmd: "dotnet nuget push ..\\..\\artifacts\\*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${process.env.CI_NUGET_API_KEY}"
+    - publishCmd: "dotnet nuget push ../../artifacts/Compo.${process.env.RELEASE_VERSION}.nupkg --source https://api.nuget.org/v3/index.json --api-key ${process.env.CI_NUGET_API_KEY}"
