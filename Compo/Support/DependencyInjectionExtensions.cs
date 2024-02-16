@@ -17,7 +17,11 @@ public static class DependencyInjectionExtensions
         var functionTypes = assemblies
             .SelectMany(a => a.GetTypes())
             .Where(t => t.GetInterfaces()
-                .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IFunction<,>)))
+                .Any(i => i.IsGenericType && (
+                    i.GetGenericTypeDefinition() == typeof(IFunction<,>) ||
+                    i.GetGenericTypeDefinition() == typeof(IFunction<,,>) ||
+                    i.GetGenericTypeDefinition() == typeof(IFunction<,,,>)
+                )))
             .ToList();
 
         foreach (var functionType in functionTypes)
