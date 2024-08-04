@@ -20,8 +20,8 @@ public static class DependencyInjectionExtensions
                 .Any(i => i.IsGenericType && (
                     i.GetGenericTypeDefinition() == typeof(IFunction<,>) ||
                     i.GetGenericTypeDefinition() == typeof(IFunction<,,>) ||
-                    i.GetGenericTypeDefinition() == typeof(IFunction<,,,>)
-                )))
+                    i.GetGenericTypeDefinition() == typeof(IFunction<,,,>) ||
+                    i.GetGenericTypeDefinition() == typeof(IFunctionParams<,>))))
             .ToList();
 
         foreach (var functionType in functionTypes)

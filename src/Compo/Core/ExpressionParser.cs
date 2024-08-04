@@ -1,3 +1,4 @@
+using System.Globalization;
 using Pidgin;
 using static Pidgin.Parser;
 
@@ -19,10 +20,56 @@ public class ExpressionParser
     static readonly Parser<char, char> _dot = Tok('.');
     static readonly Parser<char, char> _qoute = Tok('\'');
 
+    #region PidingPaste
+
+    private static readonly Parser<char, string> SignString
+        = Char('-').ThenReturn("-")
+            .Or(Char('+').ThenReturn("+"))
+            .Or(Parser<char>.Return(""));
+
+    private static readonly Parser<char, Unit> FractionalPart
+        = Char('.').Then(Digit.SkipAtLeastOnce());
+
+    private static readonly Parser<char, Unit> OptionalFractionalPart
+        = FractionalPart.Or(Parser<char>.Return(Unit.Value));
+
+    private static Parser<char, Node> MyReal { get; }
+        = SignString
+            .Then(
+                FractionalPart
+                    .Or(Digit.SkipAtLeastOnce()
+                        .Then(OptionalFractionalPart)) // if we saw an integral part, the fractional part is optional
+            )
+            .Then(
+                CIChar('e').Then(SignString).Then(Digit.SkipAtLeastOnce())
+                    .Or(Parser<char>.Return(Unit.Value))
+            )
+            .MapWithInput<Node?>((span, _) =>
+            {
+                if (int.TryParse(span.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture,
+                        out var intResult))
+                {
+                    return new ValueNode<int>(intResult);
+                }
+
+                if (decimal.TryParse(span.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture,
+                        out var decimalResult))
+                {
+                    return new ValueNode<decimal>(decimalResult);
+                }
+
+                return null;
+            })
+            .Assert(x => x != null, "Couldn't parse a number")
+            .Select(x => x!)
+            .Labelled($"real number");
+
+    #endregion
+
     private static readonly Parser<char, Node> IntegerValue =
         Num.Select(x => (Node)new ValueNode<int>(x));
 
-    private static readonly Parser<char, Node> DoubleValue = Real.Select(x => (Node)new ValueNode<double>(x));
+    private static readonly Parser<char, Node> DoubleValue = Real.Select(x => (Node)new ValueNode<decimal>((decimal)x));
 
     private static readonly Parser<char, Node> BooleanValue =
         String("true").Or(String("false")).Select(x => (Node)new ValueNode<bool>(x == "true"));
@@ -30,7 +77,8 @@ public class ExpressionParser
     private static readonly Parser<char, Node> StringValue = AnyCharExcept('\'').ManyString()
         .Between(_qoute).Select(x => (Node)new ValueNode<string>(x));
 
-    private static readonly Parser<char, Node> Terminal = DoubleValue.Or(IntegerValue).Or(BooleanValue).Or(StringValue);
+    private static readonly Parser<char, Node> Terminal =
+        MyReal.Or(BooleanValue).Or(StringValue);
 
     // Feature flag
     /*private static readonly Parser<char, Node> Infix =
@@ -58,7 +106,7 @@ public class ExpressionParser
                     .Between(Whitespaces.IgnoreResult())
                     .Separated(_comma),
                 _closeParen.Then( /*Try(Parser<char>.End.IgnoreResult()).Or*/
-                    (Try(Terminal).Or(Rec(() => function)).Between(_openBracket, _closeBracket).Many())));
+                    Try(Terminal).Or(Rec(() => function)).Between(_openBracket, _closeBracket).Many()));
 
         expression = Map((_, func, _) => func, Tok('@'), function, Parser<char>.End);
     }
@@ -71,7 +119,7 @@ public class ExpressionParser
     public ParseResult BuildAst(string input)
     {
         var parseResult = expression.Parse(input);
-        var t = Parser<char>.End;
+        _ = Parser<char>.End;
 
         if (!parseResult.Success)
         {

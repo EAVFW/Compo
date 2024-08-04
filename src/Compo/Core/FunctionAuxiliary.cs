@@ -16,6 +16,8 @@ public static class FunctionAuxiliary
         var interfaceTypes = invokableType.GetInterfaces()
             .Where(i => i.IsGenericType).ToArray();
 
+        var paramsFunction = interfaceTypes.Any(x => x.GetGenericTypeDefinition() == typeof(IFunctionParams<,>));
+
         if (interfaceTypes.Length <= 0) return null;
 
         // Only get execute function which matches parameter length - not including params stuff yet
@@ -35,6 +37,23 @@ public static class FunctionAuxiliary
             where match
             select type.GetMethod("Execute")).FirstOrDefault();
 
+        if (paramsFunction)
+        {
+            var t =
+                from type in interfaceTypes
+                where type.GetGenericTypeDefinition() == typeof(IFunctionParams<,>)
+                    select type;
+            // I need to find the one that fits the best, i.e. if there is a decimal, it should be decimal
+            var executeMethod1 = (
+                from type in t
+                let genericArgument = type.GetGenericArguments().First()
+                let match = args.Any(genericArgument.IsInstanceOfType)
+                where match
+                orderby Order(genericArgument) descending
+                select type.GetMethod("Execute"));
+            executeMethod = executeMethod1.FirstOrDefault();
+        }
+
         if (executeMethod == null)
         {
             executeMethod = onLength.FirstOrDefault()?.GetMethod("Execute");
@@ -48,6 +67,18 @@ public static class FunctionAuxiliary
         var parameters = executeMethod.GetParameters();
         var invokeParams = new object[args.Length];
 
+        // If it is a a params function, we need to handle it differently
+        if (paramsFunction)
+        {
+            var target = parameters.First().ParameterType.GetElementType() ?? throw new Exception();
+            var targetArray = Array.CreateInstance(target, args.Length);
+            for (var i = 0; i < args.Length; i++)
+            {
+                targetArray.SetValue(Convert.ChangeType(args[i], target), i);
+            }
+            return executeMethod.Invoke(invokable, [targetArray]);
+        }
+
         for (var i = 0; i < args.Length; i++)
         {
             // Virker det som "normal" casting
@@ -55,5 +86,17 @@ public static class FunctionAuxiliary
         }
 
         return executeMethod.Invoke(invokable, invokeParams);
+    }
+
+    // TODO: Determine a better way of handling function calls with split typed arguments.
+    private static int Order(Type t)
+    {
+        return t.Name switch
+        {
+            "Int32" => 1,
+            "Decimal" => 2,
+            "String" => 3,
+            _ => 0
+        };
     }
 }
