@@ -39,6 +39,16 @@ public class Trees
                 new AccessNode(new FunctionNode("object", []), new ValueNode<int>(1)));
             Add("@object()[abc()]", new AccessNode(new FunctionNode("object", []), new FunctionNode("abc", [])));
             Add("@object()['abc']", new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc")));
+            Add("@object().abc", new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc")));
+            Add("@object().abc.xyz",
+                new AccessNode(new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc")),
+                    new ValueNode<string>("xyz")));
+            Add("@object().abc['xyz']",
+                new AccessNode(new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc")),
+                    new ValueNode<string>("xyz")));
+            Add("@object()['abc'].xyz",
+                new AccessNode(new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc")),
+                    new ValueNode<string>("xyz")));
             Add("@object()['abc']['abc']",
                 new AccessNode(
                     new AccessNode(
