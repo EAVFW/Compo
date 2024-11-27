@@ -9,12 +9,17 @@
         <AssemblyName>EAVFW.$(MSBuildProjectName)</AssemblyName>
         <PackageId>EAVFW.$(MSBuildProjectName)</PackageId>
 
-        <Authurs>Thyge Skødt Steffensen</Authurs>
+        <Authurs>Thyge Skødt Steffensen;Poul Kjeldager</Authurs>
         <Company>EAVFW</Company>
 
         <PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/EAVFW/Compo</RepositoryUrl>
     </PropertyGroup>
 
+	<ItemGroup>
+		<None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+	
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0"/>
