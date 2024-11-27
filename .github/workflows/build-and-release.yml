@@ -25,16 +25,13 @@ jobs:
           global-json-file: ./global.json
 
       - name: Cleaning
-        run: dotnet clean -c Release
-        working-directory: ./src
+        run: dotnet clean -c Release 
 
       - name: Build solution
-        run: dotnet build -c Release
-        working-directory: ./src
+        run: dotnet build -c Release 
 
       - name: Test solution
-        run: dotnet test -c Release --no-build --verbosity normal
-        working-directory: ./src
+        run: dotnet test -c Release --no-build --verbosity normal 
 
   release:
     name: Releasing
@@ -67,8 +64,7 @@ jobs:
         run: npx semantic-release --dry-run --no-ci
 
       - name: Cleaning
-        run: dotnet clean --configuration Release
-        working-directory: ./src
+        run: dotnet clean --configuration Release 
 
       - name: Package Compo
         run: dotnet pack -c Release -p:PackageVersion=${RELEASE_VERSION} -o ./artifacts
