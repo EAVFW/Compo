@@ -2,7 +2,10 @@ using System.Runtime.InteropServices.JavaScript;
 
 namespace Compo;
 
-public record Node;
+public abstract record Node
+{
+    public abstract string NodeType { get; }
+};
 
 /// <summary>
 /// Value Node is encapsulating a value
@@ -11,6 +14,8 @@ public record Node;
 /// <typeparam name="T">The Node value type</typeparam>
 public record ValueNode<T>(T Value) : Node
 {
+    override public string NodeType => "ValueNode";
+
     public virtual bool Equals(ValueNode<T>? other)
     {
         return other != null && other.Value.Equals(Value);
@@ -29,6 +34,8 @@ public record ValueNode<T>(T Value) : Node
 /// <param name="Arguments">Function arguments, can be any node</param>
 public record FunctionNode(string Function, List<Node> Arguments) : Node
 {
+    override public string NodeType => "FunctionNode";
+
     public virtual bool Equals(FunctionNode? other)
     {
         return
@@ -51,6 +58,7 @@ public record FunctionNode(string Function, List<Node> Arguments) : Node
 /// <param name="Index"></param>
 public record AccessNode(Node Node, Node Index) : Node
 {
+    override public string NodeType => "AccessNode";
     public virtual bool Equals(AccessNode? other)
     {
         return other != null && other.Node.Equals(Node) && other.Index.Equals(Index);

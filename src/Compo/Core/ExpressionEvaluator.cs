@@ -57,8 +57,8 @@ public class ExpressionEvaluator(
         var registration = registrations.FirstOrDefault(x => x.FunctionName == f);
         if (registration == default)
         {
-            throw new Exception("No can do 1");
-        }
+            throw new Exception(string.Format( "function {0} is not registered",f));
+        } 
 
         Evaluate(functionNode.Arguments.First());
         var args = functionNode.Arguments.Select(Evaluate).ToArray();
