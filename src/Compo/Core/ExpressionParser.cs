@@ -130,4 +130,17 @@ public class ExpressionParser
 
         return new ParseResult(parseResult);
     }
+
+    public string BuildExpression(Node node)
+    {
+        return node switch
+        {
+            ValueNode<int> valueNode => valueNode.Value.ToString(),
+            ValueNode<decimal> valueNode => valueNode.Value.ToString(CultureInfo.InvariantCulture),
+            ValueNode<string> valueNode => $"'{valueNode.Value}'",
+            FunctionNode functionNode => $"{functionNode.Function}({string.Join(", ", functionNode.Arguments.Select(BuildExpression))})",
+            AccessNode accessNode => $"{BuildExpression(accessNode.Node)}[{BuildExpression(accessNode.Index)}]",
+            _ => throw new ArgumentOutOfRangeException(nameof(node))
+        };
+    }
 }
