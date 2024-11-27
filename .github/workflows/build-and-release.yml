@@ -68,7 +68,6 @@ jobs:
 
       - name: Package Compo
         run: dotnet pack -c Release -p:PackageVersion=${RELEASE_VERSION} -o ./artifacts
-        working-directory: ./src
         if: ${{ env.RELEASE_VERSION }}
 
       - name: Release to GitHub and NuGet
