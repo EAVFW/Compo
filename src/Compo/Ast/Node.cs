@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices.JavaScript;
-
 namespace Compo;
 
 public abstract record Node
@@ -14,7 +12,7 @@ public abstract record Node
 /// <typeparam name="T">The Node value type</typeparam>
 public record ValueNode<T>(T Value) : Node
 {
-    override public string NodeType => "ValueNode";
+    public override string NodeType => "ValueNode";
 
     public virtual bool Equals(ValueNode<T>? other)
     {
@@ -31,10 +29,10 @@ public record ValueNode<T>(T Value) : Node
 /// Function Node is encapsulating a function call and its arguments
 /// </summary>
 /// <param name="Function">Function name</param>
-/// <param name="Arguments">Function arguments, can be any node</param>
+/// <param name="Arguments">Function arguments can be any node</param>
 public record FunctionNode(string Function, List<Node> Arguments) : Node
 {
-    override public string NodeType => "FunctionNode";
+    public override string NodeType => "FunctionNode";
 
     public virtual bool Equals(FunctionNode? other)
     {
@@ -56,16 +54,21 @@ public record FunctionNode(string Function, List<Node> Arguments) : Node
 /// </summary>
 /// <param name="Node"></param>
 /// <param name="Index"></param>
-public record AccessNode(Node Node, Node Index) : Node
+public record AccessNode(Node Node, Node Index, bool Nulled = false) : Node
 {
-    override public string NodeType => "AccessNode";
+    public override string NodeType => "AccessNode";
+
     public virtual bool Equals(AccessNode? other)
     {
-        return other != null && other.Node.Equals(Node) && other.Index.Equals(Index);
+        return other != null && other.Node.Equals(Node) && other.Index.Equals(Index) && other.Nulled == Nulled;
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(base.GetHashCode(), HashCode.Combine(Node.GetHashCode(), Index.GetHashCode()));
+        return
+            HashCode.Combine(base.GetHashCode(),
+                HashCode.Combine(Node.GetHashCode(),
+                    HashCode.Combine(Index.GetHashCode(),
+                        Nulled.GetHashCode())));
     }
 }

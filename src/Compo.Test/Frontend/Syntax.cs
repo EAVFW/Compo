@@ -49,20 +49,36 @@ public class Trees
             Add("@object()['abc'].xyz",
                 new AccessNode(new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc")),
                     new ValueNode<string>("xyz")));
-            Add("@object()['abc']['abc']",
+            Add("@object()['abc']['def']",
                 new AccessNode(
                     new AccessNode(
                         new FunctionNode("object", []), new ValueNode<string>("abc")),
-                    new ValueNode<string>("abc")));
-            Add("@object()[abc()['abc']]", new AccessNode(
-                new FunctionNode("object", []),
-                new AccessNode(new FunctionNode("abc", []), new ValueNode<string>("abc"))));
+                    new ValueNode<string>("def")));
+            Add("@object()[abc()['abc']]",
+                new AccessNode(
+                    new FunctionNode("object", []),
+                    new AccessNode(new FunctionNode("abc", []), new ValueNode<string>("abc"))));
+            Add("@object()?['abc']",
+                new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc"), true));
+            Add("@object()?.abc",
+                new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc"), true));
+            Add("@object()?['abc']?['def']",
+                new AccessNode(new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc"), true),
+                    new ValueNode<string>("def"), true));
+            Add("@object()['abc']?['def']",
+                new AccessNode(new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc"), false),
+                    new ValueNode<string>("def"), true));
+            Add("@object()?['abc']['def']",
+                new AccessNode(new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc"), true),
+                    new ValueNode<string>("def"), false));
+            Add("@object()?.abc?['def']",
+                new AccessNode(new AccessNode(new FunctionNode("object", []), new ValueNode<string>("abc"), true),
+                    new ValueNode<string>("def"), true));
         }
     }
 
     [Theory]
     [ClassData(typeof(FrontendTestInput))]
-    // [InlineData("@int(2)", (Node)new FunctionNode("int", [new ValueNode<int>(2)]))]
     public void Test(string input, Node expected)
     {
         var actual = new ExpressionParser().BuildAst(input).Value;

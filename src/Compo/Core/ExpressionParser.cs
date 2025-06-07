@@ -62,24 +62,24 @@ public class ExpressionParser
             })
             .Assert(x => x != null, "Couldn't parse a number")
             .Select(x => x!)
-            .Labelled($"real number");
+            .Labelled("real number");
 
     #endregion
 
     private static readonly Parser<char, Node> IntegerValue =
-        Num.Select(x => (Node)new ValueNode<int>(x));
+        Num.Select<Node>(x => new ValueNode<int>(x));
 
-    private static readonly Parser<char, Node> DoubleValue = Real.Select(x => (Node)new ValueNode<decimal>((decimal)x));
+    private static readonly Parser<char, Node> DoubleValue = Real.Select<Node>(x => new ValueNode<decimal>((decimal)x));
 
     private static readonly Parser<char, Node> BooleanValue =
-        String("true").Or(String("false")).Select(x => (Node)new ValueNode<bool>(x == "true"));
+        String("true").Or(String("false")).Select<Node>(x => new ValueNode<bool>(x == "true"));
 
     private static readonly Parser<char, Node> StringValue = AnyCharExcept('\'').ManyString()
-        .Between(Quote).Select(x => (Node)new ValueNode<string>(x));
+        .Between(Quote).Select<Node>(x => new ValueNode<string>(x));
 
     private static readonly Parser<char, Node> Terminal =
         MyReal.Or(BooleanValue).Or(StringValue);
-    
+
     // Feature flag
     /*private static readonly Parser<char, Node> Infix =
         Map((lhs, op, rhs) => (Node)new FunctionNode("add", [lhs, rhs]),
@@ -89,7 +89,6 @@ public class ExpressionParser
 
     private static Parser<char, Node> _function = null!;
     private static Parser<char, Node> _expression = null!;
-    private static Parser<char, Node> _indexedFunction = null!;
 
 
     public ExpressionParser()
@@ -98,17 +97,22 @@ public class ExpressionParser
             Map(
                 (functionName, args, access) =>
                     access.Aggregate((Node)new FunctionNode(functionName, args.Where(x => x != null!).ToList()),
-                        (node, node1) => new AccessNode(node, node1)),
+                        (node, node1) => new AccessNode(node, node1.b, node1.a.HasValue)),
                 AnyCharExcept('(', ']', '[').ManyString().Before(OpenParen),
                 Try(Terminal)
                     .Or(Try(Rec(() => _function)))
-                    .Or(SkipWhitespaces.Select(_ => (Node)null!))
+                    .Or(SkipWhitespaces.Select<Node>(_ => null!))
                     .Between(Whitespaces.IgnoreResult())
                     .Separated(Comma),
-                CloseParen.Then( /*Try(Parser<char>.End.IgnoreResult()).Or*/
-                    (Try(Terminal).Or(Rec(() => _function)).Between(OpenBracket, CloseBracket).Or(
-                        Dot.Then(AnyCharExcept('[', ')', '.').ManyString().Select(x => (Node)new ValueNode<string>(x)))))
-                    .Many()));
+                CloseParen.Then(
+                    Map(
+                        (a, b) => new { a, b },
+                        Char('?').Optional(),
+                        Try(Terminal).Or(Rec(() => _function))
+                            .Between(OpenBracket, CloseBracket).Or(
+                                Dot.Then(AnyCharExcept('[', ')', '.', '?').ManyString()
+                                    .Select<Node>(x => new ValueNode<string>(x))))
+                    ).Many()));
 
         _expression = Map((_, func, _) => func, Tok('@'), _function, Parser<char>.End);
     }
@@ -129,18 +133,5 @@ public class ExpressionParser
         }
 
         return new ParseResult(parseResult);
-    }
-
-    public string BuildExpression(Node node)
-    {
-        return node switch
-        {
-            ValueNode<int> valueNode => valueNode.Value.ToString(),
-            ValueNode<decimal> valueNode => valueNode.Value.ToString(CultureInfo.InvariantCulture),
-            ValueNode<string> valueNode => $"'{valueNode.Value}'",
-            FunctionNode functionNode => $"{functionNode.Function}({string.Join(", ", functionNode.Arguments.Select(BuildExpression))})",
-            AccessNode accessNode => $"{BuildExpression(accessNode.Node)}[{BuildExpression(accessNode.Index)}]",
-            _ => throw new ArgumentOutOfRangeException(nameof(node))
-        };
     }
 }
