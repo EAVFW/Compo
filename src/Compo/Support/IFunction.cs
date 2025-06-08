@@ -2,6 +2,11 @@ namespace Compo;
 
 public interface IFunction;
 
+public interface IFunction<out TR> : IFunction
+{
+    public TR Execute();
+}
+
 public interface IFunction<in T, out TR> : IFunction
     where T : IConvertible
 {
