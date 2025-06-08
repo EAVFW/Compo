@@ -21,13 +21,12 @@ public class MathTest
 
     [InlineData("@div(4,2)", 2)]
     [InlineData("@div(4.2, 2.1)", 2)]
-    //  [InlineData("@div(4.2, 2)", 2.1)] //TODO - this fails with Expected actual to be 2.1, but found 2.
     public void Tester(string expression, object result)
     {
         var services = new ServiceCollection();
         services.AddLogging();
 
-        services.RegisterFunctions(typeof(MultiplicationFunction), "mult");
+        services.RegisterFunction<MultiplicationFunction>("mult");
 
         services.DiscoverFunctions();
 
