@@ -13,6 +13,8 @@ public interface IExpressionEvaluator
     /// <param name="node">Either a <see cref="ValueNode{T}"/> or <see cref="FunctionNode"/></param>
     /// <returns>The value of a <see cref="ValueNode{T}"/> or the result of a <see cref="FunctionNode"/></returns>
     object? Evaluate(Node node);
+
+    T EvaluateValue<T>(ValueNode<T> valueNode);
 }
 
 public class ExpressionEvaluator(
