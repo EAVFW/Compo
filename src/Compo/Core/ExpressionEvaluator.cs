@@ -25,30 +25,68 @@ public class ExpressionEvaluator(
     /// <inheritdoc/>
     public object? Evaluate(Node node)
     {
-        if (node is FunctionNode f)
+        switch (node)
         {
-            return EvaluateFunction(f);
+            case FunctionNode f:
+                return EvaluateFunction(f);
+            case ValueNode<object> v:
+                return v.Value;
+            case ValueNode<int> v:
+                return v.Value;
+            case ValueNode<double> v:
+                return v.Value;
+            case ValueNode<string> v:
+                return v.Value;
+            case ValueNode<bool> v:
+                return v.Value;
+            case ValueNode<decimal> v:
+                return v.Value;
+            case AccessNode n:
+                var evaluatedNode = Evaluate(n.Node);
+
+                if (evaluatedNode == null)
+                {
+                    if (n.Nulled)
+                    {
+                        return null;
+                    }
+
+                    throw new NullReferenceException($"Accessing a null node: {n.Node}");
+                }
+
+                // Short circuit evaluation for index access
+                var evaluatedIndex = Evaluate(n.Index);
+                if (evaluatedIndex is string key)
+                {
+                    if (evaluatedNode is IDictionary<string, object> dict)
+                    {
+                        if (dict.TryGetValue(key, out var value))
+                        {
+                            return value;
+                        }
+                        throw new KeyNotFoundException($"Key '{key}' not found");
+                    }
+
+                    throw new Exception("Expecting node to be an object");
+                }
+
+                if (evaluatedIndex is int index)
+                {
+                    if (evaluatedNode is IEnumerable<object> list)
+                    {
+                        return list.ElementAt(index);
+                    }
+
+                    throw new Exception("Expecting node to be an list");
+                }
+
+                throw new InvalidDataException("AccessNode index must be either a string or an int.");
+            default:
+                throw new NotSupportedException($"Node type {node.NodeType} is not supported.");
         }
-
-        var nodeTypes = node.GetType().GetGenericArguments();
-        var nodeType = nodeTypes.FirstOrDefault();
-
-        if (nodeType != null && nodeTypes.Length > 1)
-            throw new Exception("Cannot happen?");
-
-        // TODO: Hvad er cost? Er det hurtigere at bruge reflection eller at lave en switch på alle typer?
-        var method = typeof(ExpressionEvaluator)
-            .GetMethod(nameof(EvaluateValue), BindingFlags.NonPublic | BindingFlags.Instance)!
-            .MakeGenericMethod(nodeType!);
-
-        var value = method.Invoke(this, [node]);
-
-        var typedValue = Convert.ChangeType(value, nodeType!);
-
-        return typedValue;
     }
 
-    private T EvaluateValue<T>(ValueNode<T> valueNode)
+    public T EvaluateValue<T>(ValueNode<T> valueNode)
     {
         return valueNode.Value;
     }
@@ -57,12 +95,12 @@ public class ExpressionEvaluator(
     {
         var f = functionNode.Function;
         var registration = registrations.FirstOrDefault(x => x.FunctionName == f);
-        if (registration == default)
-        {
-            throw new Exception(string.Format( "function {0} is not registered",f));
-        } 
 
-        Evaluate(functionNode.Arguments.First());
+        if (registration == null)
+        {
+            throw new Exception($"function {f} is not registered");
+        }
+
         var args = functionNode.Arguments.Select(Evaluate).ToArray();
 
         if (serviceProvider.GetService(registration.FunctionType) is not IFunction ifn)
