@@ -81,8 +81,14 @@ public static class FunctionAuxiliary
 
         for (var i = 0; i < args.Length; i++)
         {
-            // Virker det som "normal" casting
-            invokeParams[i] = Convert.ChangeType(args[i], parameters[i].ParameterType)!;
+            if (args[i].GetType() == parameters[i].ParameterType)
+            {
+                invokeParams[i] = args[i]!;               
+            }
+            else
+            {
+                invokeParams[i] = Convert.ChangeType(args[i], parameters[i].ParameterType)!;
+            }
         }
 
         return executeMethod.Invoke(invokable, invokeParams);

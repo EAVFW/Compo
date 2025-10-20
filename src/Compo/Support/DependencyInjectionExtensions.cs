@@ -60,9 +60,15 @@ public static class DependencyInjectionExtensions
     {
         serviceCollection.AddTransient<T>();
 
+        var argumentTypes = ExtractArgumentTypes(typeof(T));
+
         foreach (var name in names)
             serviceCollection.AddSingleton(new FunctionRegistration
-                { FunctionType = typeof(T), FunctionName = name });
+            {
+                FunctionType = typeof(T),
+                FunctionName = name,
+                ArgumentTypes = argumentTypes
+            });
 
         return serviceCollection;
     }
@@ -78,9 +84,11 @@ public static class DependencyInjectionExtensions
     {
         serviceCollection.AddTransient(function);
 
+        var argumentTypes = ExtractArgumentTypes(function);
+
         foreach (var name in names)
             serviceCollection.AddSingleton(new FunctionRegistration
-                { FunctionType = function, FunctionName = name });
+                { FunctionType = function, FunctionName = name, ArgumentTypes = argumentTypes });
 
         return serviceCollection;
     }
@@ -98,5 +106,24 @@ public static class DependencyInjectionExtensions
     public static IServiceCollection AddCompo(this IServiceCollection services)
     {
         return services.AddExpressionEngine();
+    }
+
+    /// <summary>
+    /// Extracts argument types from IFunction interface implementation.
+    /// Returns array of argument types excluding the return type.
+    /// For IFunction&lt;T1, T2, ..., TN, TResult&gt;, this contains [T1, T2, ..., TN] (excluding TResult).
+    /// </summary>
+    private static Type[]? ExtractArgumentTypes(Type functionType)
+    {
+        var interfaces = functionType.GetInterfaces()
+            .Where(i => i.IsGenericType && i.GetGenericTypeDefinition().Name.StartsWith("IFunction"))
+            .ToArray();
+
+        if (interfaces.Length == 0)
+            return null;
+
+        var genericArgs = interfaces[0].GetGenericArguments();
+        // Last argument is return type, exclude it
+        return genericArgs.Take(genericArgs.Length - 1).ToArray();
     }
 }

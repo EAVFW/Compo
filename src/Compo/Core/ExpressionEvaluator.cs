@@ -94,20 +94,80 @@ public class ExpressionEvaluator(
     private object? EvaluateFunction(FunctionNode functionNode)
     {
         var f = functionNode.Function;
-        var registration = registrations.FirstOrDefault(x => x.FunctionName == f);
 
-        if (registration == null)
+        // Evaluate arguments first to know the count
+        var args = functionNode.Arguments.Select(Evaluate).ToArray();
+
+        // Find all registrations with this function name
+        var candidateRegistrations = registrations.Where(x => x.FunctionName == f).ToArray();
+
+        if (candidateRegistrations.Length == 0)
         {
             throw new Exception($"function {f} is not registered");
         }
 
-        var args = functionNode.Arguments.Select(Evaluate).ToArray();
+        // If there's only one registration, use it
+        if (candidateRegistrations.Length == 1)
+        {
+            var registration = candidateRegistrations[0];
+            if (serviceProvider.GetService(registration.FunctionType) is not IFunction ifn)
+            {
+                throw new Exception("No can do 2");
+            }
 
-        if (serviceProvider.GetService(registration.FunctionType) is not IFunction ifn)
+            return FunctionAuxiliary.FunctionInvoker(ifn, args);
+        }
+
+        // Multiple registrations - find the one that matches the argument count
+        // Use pre-parsed ArgumentTypes for fast matching
+        FunctionRegistration? matchedRegistration = null;
+
+        foreach (var candidate in candidateRegistrations)
+        {
+            // If ArgumentTypes is cached, use it for fast matching
+            if (candidate.ArgumentTypes != null)
+            {
+                if (candidate.ArgumentTypes.Length == args.Length)
+                {
+                    matchedRegistration = candidate;
+                    break;
+                }
+            }
+            else
+            {
+                // Fallback to reflection if ArgumentTypes not available
+                var functionType = candidate.FunctionType;
+                var interfaces = functionType.GetInterfaces()
+                    .Where(i => i.IsGenericType && i.GetGenericTypeDefinition().Name.StartsWith("IFunction"))
+                    .ToArray();
+
+                foreach (var iface in interfaces)
+                {
+                    var genericArgs = iface.GetGenericArguments();
+                    // IFunction<T1, T2, ..., TN, TResult> has N+1 generic arguments
+                    // The last one is the return type, so argument count is Length - 1
+                    var expectedArgCount = genericArgs.Length - 1;
+
+                    if (expectedArgCount == args.Length)
+                    {
+                        matchedRegistration = candidate;
+                        break;
+                    }
+                }
+
+                if (matchedRegistration != null)
+                    break;
+            }
+        }
+
+        // If no match found, fall back to first registration (existing behavior)
+        var finalRegistration = matchedRegistration ?? candidateRegistrations[0];
+
+        if (serviceProvider.GetService(finalRegistration.FunctionType) is not IFunction ifn2)
         {
             throw new Exception("No can do 2");
         }
 
-        return FunctionAuxiliary.FunctionInvoker(ifn, args);
+        return FunctionAuxiliary.FunctionInvoker(ifn2, args);
     }
 }
