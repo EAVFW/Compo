@@ -81,13 +81,21 @@ public static class FunctionAuxiliary
 
         for (var i = 0; i < args.Length; i++)
         {
-            if (args[i].GetType() == parameters[i].ParameterType)
+            var argType = args[i]?.GetType();
+            if (args[i]?.GetType() == parameters[i].ParameterType)
             {
                 invokeParams[i] = args[i]!;               
             }
-            else
+            else if(argType?.IsAssignableTo(parameters[i].ParameterType) ?? false)
             {
-                invokeParams[i] = Convert.ChangeType(args[i], parameters[i].ParameterType)!;
+                invokeParams[i] = args[i]!;
+            }
+            else if (args[i] is IConvertible convertible)
+            {
+                invokeParams[i] = Convert.ChangeType(convertible, parameters[i].ParameterType)!;
+            }else
+            {
+                invokeParams[i] = args[i]!;
             }
         }
 
