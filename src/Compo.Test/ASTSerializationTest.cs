@@ -20,8 +20,8 @@ public class ASTSerializationTest
 
         Console.WriteLine($"Serialized AST: {json}");
 
-        // Check that the space is preserved in the JSON
-        json.Should().Contain("\"value\":\" \"", "the space separator should be preserved in the AST");
+        // Check that the space is preserved in the JSON (JSON will have the space in the value)
+        json.Should().Contain("\"value\": \" \"", "the space separator should be preserved in the AST");
 
         // Deserialize and verify
         var deserialized = serializer.Deserialize(json);
@@ -51,8 +51,8 @@ public class ASTSerializationTest
         Console.WriteLine($"Expression: {expression}");
         Console.WriteLine($"Serialized AST: {json}");
 
-        // Check that ALL space separators are preserved
-        var spaceCount = json.Split(new[] { "\"value\":\" \"" }, StringSplitOptions.None).Length - 1;
+        // Check that ALL space separators are preserved (with proper JSON spacing)
+        var spaceCount = json.Split(new[] { "\"value\": \" \"" }, StringSplitOptions.None).Length - 1;
         spaceCount.Should().Be(3, "there should be 3 space separators in the expression");
     }
 }

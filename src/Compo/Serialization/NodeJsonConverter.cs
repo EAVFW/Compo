@@ -29,6 +29,7 @@ public class NodeJsonConverter : JsonConverter<Node>
             "value_int" => new ValueNode<int>(root.GetProperty("value").GetInt32()),
             "value_decimal" => new ValueNode<decimal>(root.GetProperty("value").GetDecimal()),
             "value_bool" => new ValueNode<bool>(root.GetProperty("value").GetBoolean()),
+            "value_null" => new ValueNode<object?>(null),
             _ => throw new JsonException($"Unknown node type: {nodeType}")
         };
     }
@@ -118,6 +119,11 @@ public class NodeJsonConverter : JsonConverter<Node>
             case ValueNode<bool> vb:
                 writer.WriteString("$type", "value_bool");
                 writer.WriteBoolean("value", vb.Value);
+                break;
+
+            case ValueNode<object?> vn:
+                writer.WriteString("$type", "value_null");
+                writer.WriteNull("value");
                 break;
 
             default:

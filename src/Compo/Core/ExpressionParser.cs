@@ -74,11 +74,14 @@ public class ExpressionParser
     private static readonly Parser<char, Node> BooleanValue =
         String("true").Or(String("false")).Select<Node>(x => new ValueNode<bool>(x == "true"));
 
+    private static readonly Parser<char, Node> NullValue =
+        String("null").Select<Node>(_ => new ValueNode<object?>(null));
+
     private static readonly Parser<char, Node> StringValue = AnyCharExcept('\'').ManyString()
         .Between(Quote).Select<Node>(x => new ValueNode<string>(x));
 
     private static readonly Parser<char, Node> Terminal =
-        MyReal.Or(BooleanValue).Or(StringValue);
+        MyReal.Or(BooleanValue).Or(NullValue).Or(StringValue);
 
     // Feature flag
     /*private static readonly Parser<char, Node> Infix =
@@ -98,7 +101,7 @@ public class ExpressionParser
                 (functionName, args, access) =>
                     access.Aggregate((Node)new FunctionNode(functionName, args.Where(x => x != null!).ToList()),
                         (node, node1) => new AccessNode(node, node1.b, node1.a.HasValue)),
-                AnyCharExcept('(', ']', '[').ManyString().Before(OpenParen),
+                AnyCharExcept('(', ')', ',', ']', '[').ManyString().Before(OpenParen),
                 SkipWhitespaces.Then(
                     Try(Terminal)
                         .Or(Try(Rec(() => _function)))
