@@ -18,7 +18,7 @@ public class ExpressionParser
     private static readonly Parser<char, char> OpenBracket = Tok('[');
     private static readonly Parser<char, char> CloseBracket = Tok(']');
     private static readonly Parser<char, char> Dot = Tok('.');
-    private static readonly Parser<char, char> Quote = Tok('\'');
+    private static readonly Parser<char, char> Quote = Char('\''); // Don't skip whitespace after quotes in string literals
 
     #region PidingPaste
 
@@ -99,10 +99,11 @@ public class ExpressionParser
                     access.Aggregate((Node)new FunctionNode(functionName, args.Where(x => x != null!).ToList()),
                         (node, node1) => new AccessNode(node, node1.b, node1.a.HasValue)),
                 AnyCharExcept('(', ']', '[').ManyString().Before(OpenParen),
-                Try(Terminal)
-                    .Or(Try(Rec(() => _function)))
-                    .Or(SkipWhitespaces.Select<Node>(_ => null!))
-                    .Between(Whitespaces.IgnoreResult())
+                SkipWhitespaces.Then(
+                    Try(Terminal)
+                        .Or(Try(Rec(() => _function)))
+                        .Or(SkipWhitespaces.Select<Node>(_ => null!))
+                ).Before(SkipWhitespaces)
                     .Separated(Comma),
                 CloseParen.Then(
                     Map(

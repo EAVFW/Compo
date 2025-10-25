@@ -151,8 +151,8 @@ public class TypeConversionErrorTest
     [Fact]
     public void DateTimeConversion_WithInvalidFormat_ShouldThrow()
     {
-        // Replicates the production error:
-        // failedFields: { bd_dateofconsent: {
+        // Demonstrates error when datetime conversion fails:
+        // failedFields: { consent_date: {
         //   message: 'Exception has been thrown by the target of an invocation.',
         //   innerMessage: 'Cannot convert '2025-03-14-13.20.24.208783' to DateTime'
         // }}
@@ -247,7 +247,7 @@ public class DictionaryLookupTest
     public void DictionaryAccess_WithDynamicKey_ShouldReturnMappedValue(string expression, int expected)
     {
         // Test dictionary access with dynamic keys from payload
-        // This simulates: @picklist(payload()['bd_type'], {'Work email': 121140000, 'Private email': 121140001})
+        // This simulates: @picklist(payload()['email_type'], {'Work email': 121140000, 'Private email': 121140001})
         var services = new ServiceCollection();
         services.AddLogging();
         services.RegisterFunction<PayloadFunction>("payload");
