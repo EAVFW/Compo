@@ -29,11 +29,11 @@ public static class FunctionAuxiliary
             select type
         ).ToArray();
 
-        // Find exact match passed on parameter types
+        // Find exact match passed on parameter types (including Lazy<T> matching)
         var executeMethod = (
             from type in onLength
             let genericArguments = type.GetGenericArguments()
-            let match = !args.Where((t, i) => !genericArguments[i].IsInstanceOfType(t)).Any()
+            let match = !args.Where((t, i) => !IsParameterMatch(t, genericArguments[i])).Any()
             where match
             select type.GetMethod("Execute")).FirstOrDefault();
 
@@ -82,24 +82,108 @@ public static class FunctionAuxiliary
         for (var i = 0; i < args.Length; i++)
         {
             var argType = args[i]?.GetType();
-            if (args[i]?.GetType() == parameters[i].ParameterType)
+            var paramType = parameters[i].ParameterType;
+
+            // Handle Lazy<T> conversion
+            if (paramType.IsGenericType && paramType.GetGenericTypeDefinition() == typeof(Lazy<>))
             {
-                invokeParams[i] = args[i]!;               
+                var targetType = paramType.GetGenericArguments()[0];
+
+                if (args[i] is Lazy<object?> lazyObj)
+                {
+                    // Convert Lazy<object?> to Lazy<T>
+                    invokeParams[i] = ConvertLazy(lazyObj, targetType);
+                }
+                else
+                {
+                    // Wrap non-lazy value in Lazy<T>
+                    invokeParams[i] = WrapInLazy(args[i], targetType);
+                }
             }
-            else if(argType?.IsAssignableTo(parameters[i].ParameterType) ?? false)
+            else if (args[i]?.GetType() == paramType)
+            {
+                invokeParams[i] = args[i]!;
+            }
+            else if(argType?.IsAssignableTo(paramType) ?? false)
             {
                 invokeParams[i] = args[i]!;
             }
             else if (args[i] is IConvertible convertible)
             {
-                invokeParams[i] = Convert.ChangeType(convertible, parameters[i].ParameterType)!;
-            }else
+                invokeParams[i] = Convert.ChangeType(convertible, paramType)!;
+            }
+            else
             {
                 invokeParams[i] = args[i]!;
             }
         }
 
         return executeMethod.Invoke(invokable, invokeParams);
+    }
+
+    private static bool IsParameterMatch(object? arg, Type parameterType)
+    {
+        if (arg == null) return !parameterType.IsValueType || Nullable.GetUnderlyingType(parameterType) != null;
+
+        var argType = arg.GetType();
+
+        // Check if parameter expects Lazy<T> and arg is Lazy<object?>
+        if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(Lazy<>))
+        {
+            return arg is Lazy<object?>;
+        }
+
+        return parameterType.IsInstanceOfType(arg);
+    }
+
+    private static object ConvertLazy(Lazy<object?> source, Type targetType)
+    {
+        // Create Lazy<T> from Lazy<object?>
+        var lazyType = typeof(Lazy<>).MakeGenericType(targetType);
+
+        // Create a factory method dynamically
+        var factoryMethod = typeof(FunctionAuxiliary)
+            .GetMethod(nameof(CreateLazyFactory), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .MakeGenericMethod(targetType);
+
+        var factory = factoryMethod.Invoke(null, new object[] { source })!;
+        return Activator.CreateInstance(lazyType, factory)!;
+    }
+
+    private static Func<T> CreateLazyFactory<T>(Lazy<object?> source)
+    {
+        return () =>
+        {
+            var value = source.Value;
+            if (value == null) return default!;
+            if (value is T typed) return typed;
+            if (value is IConvertible) return (T)Convert.ChangeType(value, typeof(T));
+            return (T)value;
+        };
+    }
+
+    private static object WrapInLazy(object? value, Type targetType)
+    {
+        var lazyType = typeof(Lazy<>).MakeGenericType(targetType);
+
+        // Create a factory method dynamically
+        var factoryMethod = typeof(FunctionAuxiliary)
+            .GetMethod(nameof(CreateValueFactory), System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .MakeGenericMethod(targetType);
+
+        var factory = factoryMethod.Invoke(null, new object?[] { value })!;
+        return Activator.CreateInstance(lazyType, factory)!;
+    }
+
+    private static Func<T> CreateValueFactory<T>(object? value)
+    {
+        return () =>
+        {
+            if (value == null) return default!;
+            if (value is T typed) return typed;
+            if (value is IConvertible) return (T)Convert.ChangeType(value, typeof(T));
+            return (T)value;
+        };
     }
 
     // TODO: Determine a better way of handling function calls with split typed arguments.

@@ -104,20 +104,74 @@ public class ExpressionEvaluator(
         return valueNode.Value;
     }
 
+    private object?[] PrepareArguments(List<Node> argumentNodes, FunctionRegistration[] candidateRegistrations)
+    {
+        // Check if any candidate function expects Lazy<T> parameters
+        var needsLazyEvaluation = candidateRegistrations.Any(reg =>
+            reg.ArgumentTypes?.Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Lazy<>)) ?? false);
+
+        if (!needsLazyEvaluation)
+        {
+            // Standard evaluation - evaluate all arguments immediately
+            return argumentNodes.Select(Evaluate).ToArray();
+        }
+
+        // Mixed evaluation - need to check each parameter position
+        // Find the first matching registration with Lazy parameters
+        var lazyRegistration = candidateRegistrations.FirstOrDefault(reg =>
+            reg.ArgumentTypes?.Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Lazy<>)) ?? false);
+
+        if (lazyRegistration == null || lazyRegistration.ArgumentTypes == null)
+        {
+            return argumentNodes.Select(Evaluate).ToArray();
+        }
+
+        var args = new object?[argumentNodes.Count];
+        for (int i = 0; i < argumentNodes.Count && i < lazyRegistration.ArgumentTypes.Length; i++)
+        {
+            var paramType = lazyRegistration.ArgumentTypes[i];
+            var argNode = argumentNodes[i];
+
+            if (paramType.IsGenericType && paramType.GetGenericTypeDefinition() == typeof(Lazy<>))
+            {
+                // Create Lazy<T> wrapper that defers evaluation
+                var valueType = paramType.GetGenericArguments()[0];
+
+                // Capture the node in a closure for lazy evaluation
+                var node = argNode;
+                args[i] = CreateLazy(node, valueType);
+            }
+            else
+            {
+                // Evaluate immediately for non-lazy parameters
+                args[i] = Evaluate(argNode);
+            }
+        }
+
+        return args;
+    }
+
+    private object CreateLazy(Node node, Type valueType)
+    {
+        // Create Lazy<object?> first, then we'll handle conversion in FunctionInvoker
+        // This is simpler than trying to create Lazy<T> with proper typing via reflection
+        return new Lazy<object?>(() => Evaluate(node));
+    }
+
     private object? EvaluateFunction(FunctionNode functionNode)
     {
         var f = functionNode.Function;
 
-        // Evaluate arguments first to know the count
-        var args = functionNode.Arguments.Select(Evaluate).ToArray();
-
-        // Find all registrations with this function name
+        // Find all registrations with this function name first
         var candidateRegistrations = registrations.Where(x => x.FunctionName == f).ToArray();
 
         if (candidateRegistrations.Length == 0)
         {
             throw new Exception($"function {f} is not registered");
         }
+
+        // Prepare arguments - evaluate based on whether function expects Lazy<T>
+        var args = PrepareArguments(functionNode.Arguments, candidateRegistrations);
 
         // If there's only one registration, use it
         if (candidateRegistrations.Length == 1)
