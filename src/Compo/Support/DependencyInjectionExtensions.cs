@@ -22,6 +22,7 @@ public static class DependencyInjectionExtensions
                 var functionTypes = assembly.GetTypes()
                     .Where(t => t.GetInterfaces()
                         .Any(i => i.IsGenericType && (
+                            i.GetGenericTypeDefinition() == typeof(IFunction<>) ||
                             i.GetGenericTypeDefinition() == typeof(IFunction<,>) ||
                             i.GetGenericTypeDefinition() == typeof(IFunction<,,>) ||
                             i.GetGenericTypeDefinition() == typeof(IFunction<,,,>) ||
@@ -30,13 +31,17 @@ public static class DependencyInjectionExtensions
 
                 foreach (var functionType in functionTypes)
                 {
-                    var functionName = functionType.GetCustomAttribute<FunctionRegistrationAttribute>()?.FunctionName;
-                    if (functionName == null)
+                    // Get all FunctionRegistration attributes (can have multiple)
+                    var functionNames = functionType.GetCustomAttributes<FunctionRegistrationAttribute>()
+                        .Select(attr => attr.FunctionName)
+                        .ToArray();
+
+                    if (functionNames.Length == 0)
                     {
-                        continue; // Skip no attribute
+                        continue; // Skip if no attributes
                     }
 
-                    serviceCollection.RegisterFunction(functionType, functionName!);
+                    serviceCollection.RegisterFunction(functionType, functionNames);
                 }
             }
             catch

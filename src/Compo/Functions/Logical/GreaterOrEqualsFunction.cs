@@ -5,11 +5,13 @@ namespace Compo.Functions.Logical;
 /// Returns true if first value is greater than or equal to second.
 /// </summary>
 [FunctionRegistration("greaterorequals")]
+[FunctionRegistration("ge")]
 public class GreaterOrEqualsFunction :
     IFunction<int, int, bool>,
     IFunction<double, double, bool>,
     IFunction<decimal, decimal, bool>,
-    IFunction<long, long, bool>
+    IFunction<long, long, bool>,
+    IFunction<DateTime, DateTime, bool>
 {
     public bool Execute(int a, int b)
     {
@@ -27,6 +29,11 @@ public class GreaterOrEqualsFunction :
     }
 
     public bool Execute(long a, long b)
+    {
+        return a >= b;
+    }
+
+    public bool Execute(DateTime a, DateTime b)
     {
         return a >= b;
     }
