@@ -20,12 +20,16 @@ public static class FunctionAuxiliary
 
         if (interfaceTypes.Length <= 0) return null;
 
+        // Handle True/False bool conversion
+        // If any parameter expects True or False struct and we have a bool argument, convert it
+        var processedArgs = ProcessBooleanTypeArguments(args, interfaceTypes);
+
         // Only get execute function which matches parameter length - not including params stuff yet
         // Overvej at bruge en cache
         var onLength = (
             from type in interfaceTypes
             let genericArguments = type.GetGenericArguments()
-            where genericArguments.Length - 1 == args.Length
+            where genericArguments.Length - 1 == processedArgs.Length
             select type
         ).ToArray();
 
@@ -33,7 +37,7 @@ public static class FunctionAuxiliary
         var executeMethod = (
             from type in onLength
             let genericArguments = type.GetGenericArguments()
-            let match = !args.Where((t, i) => !IsParameterMatch(t, genericArguments[i])).Any()
+            let match = !processedArgs.Where((t, i) => !IsParameterMatch(t, genericArguments[i])).Any()
             where match
             select type.GetMethod("Execute")).FirstOrDefault();
 
@@ -47,7 +51,7 @@ public static class FunctionAuxiliary
             var executeMethod1 = (
                 from type in t
                 let genericArgument = type.GetGenericArguments().First()
-                let match = args.Any(genericArgument.IsInstanceOfType)
+                let match = processedArgs.Any(genericArgument.IsInstanceOfType)
                 where match
                 orderby Order(genericArgument) descending
                 select type.GetMethod("Execute"));
@@ -65,23 +69,23 @@ public static class FunctionAuxiliary
 
         // Convert parameters to the expected types
         var parameters = executeMethod.GetParameters();
-        var invokeParams = new object[args.Length];
+        var invokeParams = new object[processedArgs.Length];
 
         // If it is a a params function, we need to handle it differently
         if (paramsFunction)
         {
             var target = parameters.First().ParameterType.GetElementType() ?? throw new Exception();
-            var targetArray = Array.CreateInstance(target, args.Length);
-            for (var i = 0; i < args.Length; i++)
+            var targetArray = Array.CreateInstance(target, processedArgs.Length);
+            for (var i = 0; i < processedArgs.Length; i++)
             {
-                targetArray.SetValue(Convert.ChangeType(args[i], target), i);
+                targetArray.SetValue(Convert.ChangeType(processedArgs[i], target), i);
             }
             return executeMethod.Invoke(invokable, [targetArray]);
         }
 
-        for (var i = 0; i < args.Length; i++)
+        for (var i = 0; i < processedArgs.Length; i++)
         {
-            var argType = args[i]?.GetType();
+            var argType = processedArgs[i]?.GetType();
             var paramType = parameters[i].ParameterType;
 
             // Handle Lazy<T> conversion
@@ -89,7 +93,7 @@ public static class FunctionAuxiliary
             {
                 var targetType = paramType.GetGenericArguments()[0];
 
-                if (args[i] is Lazy<object?> lazyObj)
+                if (processedArgs[i] is Lazy<object?> lazyObj)
                 {
                     // Convert Lazy<object?> to Lazy<T>
                     invokeParams[i] = ConvertLazy(lazyObj, targetType);
@@ -97,24 +101,24 @@ public static class FunctionAuxiliary
                 else
                 {
                     // Wrap non-lazy value in Lazy<T>
-                    invokeParams[i] = WrapInLazy(args[i], targetType);
+                    invokeParams[i] = WrapInLazy(processedArgs[i], targetType);
                 }
             }
-            else if (args[i]?.GetType() == paramType)
+            else if (processedArgs[i]?.GetType() == paramType)
             {
-                invokeParams[i] = args[i]!;
+                invokeParams[i] = processedArgs[i]!;
             }
             else if(argType?.IsAssignableTo(paramType) ?? false)
             {
-                invokeParams[i] = args[i]!;
+                invokeParams[i] = processedArgs[i]!;
             }
-            else if (args[i] is IConvertible convertible)
+            else if (processedArgs[i] is IConvertible convertible)
             {
                 invokeParams[i] = Convert.ChangeType(convertible, paramType)!;
             }
             else
             {
-                invokeParams[i] = args[i]!;
+                invokeParams[i] = processedArgs[i]!;
             }
         }
 
@@ -131,6 +135,17 @@ public static class FunctionAuxiliary
         if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(Lazy<>))
         {
             return arg is Lazy<object?>;
+        }
+
+        // Check for True/False struct matching
+        if (parameterType.Name == "True" && argType.Name == "True")
+        {
+            return true;
+        }
+
+        if (parameterType.Name == "False" && argType.Name == "False")
+        {
+            return true;
         }
 
         return parameterType.IsInstanceOfType(arg);
@@ -196,5 +211,60 @@ public static class FunctionAuxiliary
             "String" => 3,
             _ => 0
         };
+    }
+
+    /// <summary>
+    /// Processes arguments to convert bool values to True/False structs when needed.
+    /// This enables type-safe conditional returns in generic functions.
+    /// </summary>
+    private static object?[] ProcessBooleanTypeArguments(object?[] args, Type[] interfaceTypes)
+    {
+        // Check if any interface has True or False as first parameter
+        var hasBooleanTypes = interfaceTypes.Any(iface =>
+        {
+            var genericArgs = iface.GetGenericArguments();
+            if (genericArgs.Length == 0) return false;
+
+            var firstParamType = genericArgs[0];
+            return firstParamType.Name == "True" || firstParamType.Name == "False";
+        });
+
+        if (!hasBooleanTypes || args.Length == 0)
+        {
+            return args; // No conversion needed
+        }
+
+        // Check if first argument is a bool
+        if (args[0] is not bool boolValue)
+        {
+            return args; // First arg is not bool, no conversion needed
+        }
+
+        // Convert bool to True or False struct
+        var processedArgs = new object?[args.Length];
+
+        // Get the True and False types from the Compo assembly
+        var trueType = interfaceTypes
+            .SelectMany(i => i.GetGenericArguments())
+            .FirstOrDefault(t => t.Name == "True");
+
+        var falseType = interfaceTypes
+            .SelectMany(i => i.GetGenericArguments())
+            .FirstOrDefault(t => t.Name == "False");
+
+        if (trueType == null || falseType == null)
+        {
+            return args; // Types not found, fallback
+        }
+
+        // Create instance of True or False based on bool value
+        processedArgs[0] = boolValue
+            ? Activator.CreateInstance(trueType)!
+            : Activator.CreateInstance(falseType)!;
+
+        // Copy remaining arguments
+        Array.Copy(args, 1, processedArgs, 1, args.Length - 1);
+
+        return processedArgs;
     }
 }

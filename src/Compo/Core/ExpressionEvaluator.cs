@@ -177,7 +177,8 @@ public class ExpressionEvaluator(
         if (candidateRegistrations.Length == 1)
         {
             var registration = candidateRegistrations[0];
-            if (serviceProvider.GetService(registration.FunctionType) is not IFunction ifn)
+            var ifn = GetFunctionInstance(registration, args);
+            if (ifn == null)
             {
                 throw new Exception("No can do 2");
             }
@@ -230,11 +231,28 @@ public class ExpressionEvaluator(
         // If no match found, fall back to first registration (existing behavior)
         var finalRegistration = matchedRegistration ?? candidateRegistrations[0];
 
-        if (serviceProvider.GetService(finalRegistration.FunctionType) is not IFunction ifn2)
+        var ifn2 = GetFunctionInstance(finalRegistration, args);
+        if (ifn2 == null)
         {
             throw new Exception("No can do 2");
         }
 
         return FunctionAuxiliary.FunctionInvoker(ifn2, args);
+    }
+
+    private IFunction? GetFunctionInstance(FunctionRegistration registration, object?[] args)
+    {
+        if (!registration.IsOpenGeneric)
+        {
+            // Closed type - get from DI
+            return serviceProvider.GetService(registration.FunctionType) as IFunction;
+        }
+
+        // Open generic - use object? for both type parameters
+        // The True/False dispatch will handle type safety at runtime
+        var closedType = registration.FunctionType.MakeGenericType(typeof(object), typeof(object));
+
+        // Create instance
+        return Activator.CreateInstance(closedType) as IFunction;
     }
 }

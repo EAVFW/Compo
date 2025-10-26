@@ -12,4 +12,9 @@ public record FunctionRegistration
     /// For IFunction&lt;T1, T2, ..., TN, TResult&gt;, this contains [T1, T2, ..., TN] (excluding TResult).
     /// </summary>
     public Type[]? ArgumentTypes { get; set; }
+
+    /// <summary>
+    /// Indicates if this is an open generic type that needs to be constructed at runtime.
+    /// </summary>
+    public bool IsOpenGeneric { get; set; }
 }

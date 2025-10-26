@@ -58,16 +58,20 @@ public static class DependencyInjectionExtensions
     public static IServiceCollection RegisterFunction<T>(this IServiceCollection serviceCollection,
         params string[] names)  where T : class, IFunction
     {
+        var functionType = typeof(T);
+
+        // T is always a closed type when using generic method
         serviceCollection.AddTransient<T>();
 
-        var argumentTypes = ExtractArgumentTypes(typeof(T));
+        var argumentTypes = ExtractArgumentTypes(functionType);
 
         foreach (var name in names)
             serviceCollection.AddSingleton(new FunctionRegistration
             {
-                FunctionType = typeof(T),
+                FunctionType = functionType,
                 FunctionName = name,
-                ArgumentTypes = argumentTypes
+                ArgumentTypes = argumentTypes,
+                IsOpenGeneric = false  // Generic method parameter is always closed
             });
 
         return serviceCollection;
@@ -82,13 +86,24 @@ public static class DependencyInjectionExtensions
     public static IServiceCollection RegisterFunction(this IServiceCollection serviceCollection, Type function,
         params string[] names)
     {
-        serviceCollection.AddTransient(function);
+        var isOpenGeneric = function.IsGenericTypeDefinition;
+
+        // Only register closed generic types in DI
+        if (!isOpenGeneric)
+        {
+            serviceCollection.AddTransient(function);
+        }
 
         var argumentTypes = ExtractArgumentTypes(function);
 
         foreach (var name in names)
             serviceCollection.AddSingleton(new FunctionRegistration
-                { FunctionType = function, FunctionName = name, ArgumentTypes = argumentTypes });
+            {
+                FunctionType = function,
+                FunctionName = name,
+                ArgumentTypes = argumentTypes,
+                IsOpenGeneric = isOpenGeneric
+            });
 
         return serviceCollection;
     }
