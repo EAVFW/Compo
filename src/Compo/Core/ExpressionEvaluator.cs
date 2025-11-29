@@ -106,33 +106,56 @@ public class ExpressionEvaluator(
 
     private object?[] PrepareArguments(List<Node> argumentNodes, FunctionRegistration[] candidateRegistrations)
     {
-        // Check if any candidate function expects Lazy<T> parameters
-        var needsLazyEvaluation = candidateRegistrations.Any(reg =>
-            reg.ArgumentTypes?.Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Lazy<>)) ?? false);
+        // Check if any candidate function expects Lazy<T> or has [NestedExpression] parameters
+        var needsSpecialHandling = candidateRegistrations.Any(reg =>
+            (reg.ArgumentTypes?.Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Lazy<>)) ?? false) ||
+            (reg.Parameters?.Any(p => p.GetCustomAttribute<NestedExpressionAttribute>() != null) ?? false));
 
-        if (!needsLazyEvaluation)
+        if (!needsSpecialHandling)
         {
             // Standard evaluation - evaluate all arguments immediately
             return argumentNodes.Select(Evaluate).ToArray();
         }
 
-        // Mixed evaluation - need to check each parameter position
-        // Find the first matching registration with Lazy parameters
-        var lazyRegistration = candidateRegistrations.FirstOrDefault(reg =>
-            reg.ArgumentTypes?.Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Lazy<>)) ?? false);
+        // Find the first matching registration with special parameter handling
+        var specialRegistration = candidateRegistrations.FirstOrDefault(reg =>
+            (reg.ArgumentTypes?.Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Lazy<>)) ?? false) ||
+            (reg.Parameters?.Any(p => p.GetCustomAttribute<NestedExpressionAttribute>() != null) ?? false));
 
-        if (lazyRegistration == null || lazyRegistration.ArgumentTypes == null)
+        if (specialRegistration == null || specialRegistration.ArgumentTypes == null)
         {
             return argumentNodes.Select(Evaluate).ToArray();
         }
 
         var args = new object?[argumentNodes.Count];
-        for (int i = 0; i < argumentNodes.Count && i < lazyRegistration.ArgumentTypes.Length; i++)
+        for (int i = 0; i < argumentNodes.Count && i < specialRegistration.ArgumentTypes.Length; i++)
         {
-            var paramType = lazyRegistration.ArgumentTypes[i];
+            var paramType = specialRegistration.ArgumentTypes[i];
             var argNode = argumentNodes[i];
+            var paramInfo = specialRegistration.Parameters != null && i < specialRegistration.Parameters.Length
+                ? specialRegistration.Parameters[i]
+                : null;
 
-            if (paramType.IsGenericType && paramType.GetGenericTypeDefinition() == typeof(Lazy<>))
+            // Check for [NestedExpression] attribute
+            if (paramInfo?.GetCustomAttribute<NestedExpressionAttribute>() != null)
+            {
+                // Parse string argument to Node
+                if (argNode is ValueNode<string> stringNode)
+                {
+                    var parser = (ExpressionParser)serviceProvider.GetService(typeof(ExpressionParser))!;
+                    var parseResult = parser.BuildAst(stringNode.Value);
+                    if (parseResult.Value == null)
+                    {
+                        throw new InvalidOperationException($"Failed to parse nested expression: {stringNode.Value}");
+                    }
+                    args[i] = parseResult.Value;  // Pass Node instead of string
+                }
+                else
+                {
+                    throw new InvalidOperationException($"[NestedExpression] parameter must receive a string value node, got {argNode.GetType().Name}");
+                }
+            }
+            else if (paramType.IsGenericType && paramType.GetGenericTypeDefinition() == typeof(Lazy<>))
             {
                 // Create Lazy<T> wrapper that defers evaluation
                 var valueType = paramType.GetGenericArguments()[0];
@@ -143,7 +166,7 @@ public class ExpressionEvaluator(
             }
             else
             {
-                // Evaluate immediately for non-lazy parameters
+                // Evaluate immediately for non-lazy, non-nested parameters
                 args[i] = Evaluate(argNode);
             }
         }

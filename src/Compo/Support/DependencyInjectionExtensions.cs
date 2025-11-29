@@ -61,7 +61,7 @@ public static class DependencyInjectionExtensions
     /// <param name="names">Function invocation names</param>
     /// <returns></returns>
     public static IServiceCollection RegisterFunction<T>(this IServiceCollection serviceCollection,
-        params string[] names)  where T : class, IFunction
+        params string[] names) where T : class, IFunction
     {
         var functionType = typeof(T);
 
@@ -69,6 +69,7 @@ public static class DependencyInjectionExtensions
         serviceCollection.AddTransient<T>();
 
         var argumentTypes = ExtractArgumentTypes(functionType);
+        var parameters = ExtractParameters(functionType);
 
         foreach (var name in names)
             serviceCollection.AddSingleton(new FunctionRegistration
@@ -76,6 +77,7 @@ public static class DependencyInjectionExtensions
                 FunctionType = functionType,
                 FunctionName = name,
                 ArgumentTypes = argumentTypes,
+                Parameters = parameters,
                 IsOpenGeneric = false  // Generic method parameter is always closed
             });
 
@@ -100,6 +102,7 @@ public static class DependencyInjectionExtensions
         }
 
         var argumentTypes = ExtractArgumentTypes(function);
+        var parameters = ExtractParameters(function);
 
         foreach (var name in names)
             serviceCollection.AddSingleton(new FunctionRegistration
@@ -107,6 +110,7 @@ public static class DependencyInjectionExtensions
                 FunctionType = function,
                 FunctionName = name,
                 ArgumentTypes = argumentTypes,
+                Parameters = parameters,
                 IsOpenGeneric = isOpenGeneric
             });
 
@@ -145,5 +149,15 @@ public static class DependencyInjectionExtensions
         var genericArgs = interfaces[0].GetGenericArguments();
         // Last argument is return type, exclude it
         return genericArgs.Take(genericArgs.Length - 1).ToArray();
+    }
+
+    /// <summary>
+    /// Extracts parameter information from the Execute method.
+    /// Used for checking attributes like [NestedExpression].
+    /// </summary>
+    private static ParameterInfo[]? ExtractParameters(Type functionType)
+    {
+        var executeMethod = functionType.GetMethod("Execute", BindingFlags.Public | BindingFlags.Instance);
+        return executeMethod?.GetParameters();
     }
 }

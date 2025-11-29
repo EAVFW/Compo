@@ -51,10 +51,10 @@ public class AstSerializerTests
 
         // Assert
         node.Should().BeOfType<AccessNode>();
-        var accessNode = (AccessNode)node;
+        var accessNode = (AccessNode) node;
         accessNode.Node.Should().BeOfType<FunctionNode>();
         accessNode.Index.Should().BeOfType<ValueNode<string>>();
-        ((ValueNode<string>)accessNode.Index).Value.Should().Be("firstName");
+        ((ValueNode<string>) accessNode.Index).Value.Should().Be("firstName");
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class AstSerializerTests
 
         // Assert
         deserialized.Should().BeOfType<FunctionNode>();
-        var fn = (FunctionNode)deserialized;
+        var fn = (FunctionNode) deserialized;
         fn.Function.Should().Be("testFunc");
         fn.Arguments.Should().HaveCount(2);
     }
@@ -92,7 +92,7 @@ public class AstSerializerTests
         stringJson.Should().Contain("\"$type\": \"value_string\"");
         var deserializedString = serializer.Deserialize(stringJson);
         deserializedString.Should().BeOfType<ValueNode<string>>();
-        ((ValueNode<string>)deserializedString).Value.Should().Be("test");
+        ((ValueNode<string>) deserializedString).Value.Should().Be("test");
 
         // Act & Assert - Int
         var intNode = new ValueNode<int>(123);
@@ -100,7 +100,7 @@ public class AstSerializerTests
         intJson.Should().Contain("\"$type\": \"value_int\"");
         var deserializedInt = serializer.Deserialize(intJson);
         deserializedInt.Should().BeOfType<ValueNode<int>>();
-        ((ValueNode<int>)deserializedInt).Value.Should().Be(123);
+        ((ValueNode<int>) deserializedInt).Value.Should().Be(123);
 
         // Act & Assert - Decimal
         var decimalNode = new ValueNode<decimal>(123.45m);
@@ -108,7 +108,7 @@ public class AstSerializerTests
         decimalJson.Should().Contain("\"$type\": \"value_decimal\"");
         var deserializedDecimal = serializer.Deserialize(decimalJson);
         deserializedDecimal.Should().BeOfType<ValueNode<decimal>>();
-        ((ValueNode<decimal>)deserializedDecimal).Value.Should().Be(123.45m);
+        ((ValueNode<decimal>) deserializedDecimal).Value.Should().Be(123.45m);
 
         // Act & Assert - Bool
         var boolNode = new ValueNode<bool>(true);
@@ -116,7 +116,7 @@ public class AstSerializerTests
         boolJson.Should().Contain("\"$type\": \"value_bool\"");
         var deserializedBool = serializer.Deserialize(boolJson);
         deserializedBool.Should().BeOfType<ValueNode<bool>>();
-        ((ValueNode<bool>)deserializedBool).Value.Should().BeTrue();
+        ((ValueNode<bool>) deserializedBool).Value.Should().BeTrue();
     }
 
     [Fact]
@@ -133,9 +133,9 @@ public class AstSerializerTests
 
         // Assert
         deserialized.Should().BeOfType<AccessNode>();
-        var accessNode = (AccessNode)deserialized;
+        var accessNode = (AccessNode) deserialized;
         accessNode.Node.Should().BeOfType<FunctionNode>();
-        var funcNode = (FunctionNode)accessNode.Node;
+        var funcNode = (FunctionNode) accessNode.Node;
         funcNode.Function.Should().Be("payload");
     }
 

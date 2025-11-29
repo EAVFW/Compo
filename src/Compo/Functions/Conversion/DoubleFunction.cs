@@ -23,7 +23,7 @@ public class DoubleFunction :
 
     public double Execute(decimal value)
     {
-        return (double)value;
+        return (double) value;
     }
 
     public double Execute(int value)

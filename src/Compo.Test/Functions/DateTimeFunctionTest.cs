@@ -20,7 +20,7 @@ public class DateTimeFunctionTest
 
         result.Should().NotBeNull();
         result.Should().BeOfType<DateTime>();
-        var dateTime = (DateTime)result!;
+        var dateTime = (DateTime) result!;
         dateTime.Kind.Should().Be(DateTimeKind.Utc);
 
         // Should be close to current time (within 1 second)
@@ -153,7 +153,7 @@ public class DateTimeFunctionTest
 
         result.Should().NotBeNull();
         result.Should().BeOfType<DateTime>();
-        var dateTime = (DateTime)result!;
+        var dateTime = (DateTime) result!;
         dateTime.Year.Should().Be(2024);
         dateTime.Month.Should().Be(10);
         dateTime.Day.Should().Be(26);

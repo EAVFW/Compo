@@ -7,11 +7,11 @@ public class AbsFunction :
 {
     public int Execute(double t)
     {
-        return (int)System.Math.Abs(t);
+        return (int) System.Math.Abs(t);
     }
 
     public int Execute(float t)
     {
-        return (int)System.Math.Abs(t);
+        return (int) System.Math.Abs(t);
     }
 }

@@ -98,7 +98,7 @@ public class AccessTest
 
     public class Function1 : IFunction<int, FunctionOutout>
     {
-        
+
 
         public FunctionOutout Execute(int test)
         {
@@ -106,16 +106,16 @@ public class AccessTest
         }
     }
 
-    public class Function2 : IFunction<int,int, FunctionOutout>
+    public class Function2 : IFunction<int, int, FunctionOutout>
     {
-        
+
         public FunctionOutout Execute(int teest, int test2)
         {
             return new FunctionOutout(test2);
         }
     }
 
-    public class Function3 : IFunction<FunctionOutout, int>,IFunction<FunctionOutout, FunctionOutout, int>
+    public class Function3 : IFunction<FunctionOutout, int>, IFunction<FunctionOutout, FunctionOutout, int>
     {
 
         public int Execute(FunctionOutout teest, FunctionOutout test2)
@@ -150,7 +150,7 @@ public class AccessTest
 
         services.RegisterFunction<MultiplicationFunction>("mult");
         services.RegisterFunction<OutputsFunction>("outputs");
-      
+
 
         services.DiscoverFunctions();
 
@@ -190,8 +190,8 @@ public class AccessTest
         var engine = new ExpressionParser();
         var ast = engine.BuildAst(expression);
         var actual = expressionEvaluator.Evaluate(ast.Value!);
-       
-        if(actual is FunctionOutout fo)
+
+        if (actual is FunctionOutout fo)
         {
             actual = fo.value;
         }

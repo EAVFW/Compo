@@ -86,7 +86,7 @@ public class BooleanTypeMarkerTest
 
         result.Should().NotBeNull();
         result.Should().BeOfType<MockOptionValue>();
-        ((MockOptionValue)result!).Value.Should().Be(100);
+        ((MockOptionValue) result!).Value.Should().Be(100);
     }
 
     [Fact]
@@ -128,6 +128,6 @@ public class BooleanTypeMarkerTest
 
         result.Should().NotBeNull();
         result.Should().BeOfType<MockOptionValue>();
-        ((MockOptionValue)result!).Value.Should().Be(100);
+        ((MockOptionValue) result!).Value.Should().Be(100);
     }
 }

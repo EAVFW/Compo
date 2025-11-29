@@ -1,4 +1,4 @@
-﻿namespace Compo.PerformanceTest;
+namespace Compo.PerformanceTest;
 
 public class Class1
 {

@@ -26,7 +26,7 @@ public class LongFunction :
         if (value > long.MaxValue || value < long.MinValue)
             throw new InvalidOperationException($"Value {value} is out of range for long");
 
-        return (long)System.Math.Round(value);
+        return (long) System.Math.Round(value);
     }
 
     public long Execute(decimal value)
@@ -34,7 +34,7 @@ public class LongFunction :
         if (value > long.MaxValue || value < long.MinValue)
             throw new InvalidOperationException($"Value {value} is out of range for long");
 
-        return (long)System.Math.Round(value);
+        return (long) System.Math.Round(value);
     }
 
     public long Execute(int value)

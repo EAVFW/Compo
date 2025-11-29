@@ -25,7 +25,7 @@ public class IntFunction :
         if (value > int.MaxValue || value < int.MinValue)
             throw new InvalidOperationException($"Value {value} is out of range for int");
 
-        return (int)System.Math.Round(value);
+        return (int) System.Math.Round(value);
     }
 
     public int Execute(decimal value)
@@ -33,7 +33,7 @@ public class IntFunction :
         if (value > int.MaxValue || value < int.MinValue)
             throw new InvalidOperationException($"Value {value} is out of range for int");
 
-        return (int)System.Math.Round(value);
+        return (int) System.Math.Round(value);
     }
 
     public int Execute(bool value)

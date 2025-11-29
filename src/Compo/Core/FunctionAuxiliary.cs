@@ -46,7 +46,7 @@ public static class FunctionAuxiliary
             var t =
                 from type in interfaceTypes
                 where type.GetGenericTypeDefinition() == typeof(IFunctionParams<,>)
-                    select type;
+                select type;
             // I need to find the one that fits the best, i.e. if there is a decimal, it should be decimal
             var executeMethod1 = (
                 from type in t
@@ -108,7 +108,7 @@ public static class FunctionAuxiliary
             {
                 invokeParams[i] = processedArgs[i]!;
             }
-            else if(argType?.IsAssignableTo(paramType) ?? false)
+            else if (argType?.IsAssignableTo(paramType) ?? false)
             {
                 invokeParams[i] = processedArgs[i]!;
             }
@@ -172,8 +172,8 @@ public static class FunctionAuxiliary
             var value = source.Value;
             if (value == null) return default!;
             if (value is T typed) return typed;
-            if (value is IConvertible) return (T)Convert.ChangeType(value, typeof(T));
-            return (T)value;
+            if (value is IConvertible) return (T) Convert.ChangeType(value, typeof(T));
+            return (T) value;
         };
     }
 
@@ -196,8 +196,8 @@ public static class FunctionAuxiliary
         {
             if (value == null) return default!;
             if (value is T typed) return typed;
-            if (value is IConvertible) return (T)Convert.ChangeType(value, typeof(T));
-            return (T)value;
+            if (value is IConvertible) return (T) Convert.ChangeType(value, typeof(T));
+            return (T) value;
         };
     }
 

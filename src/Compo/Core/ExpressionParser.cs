@@ -69,7 +69,7 @@ public class ExpressionParser
     private static readonly Parser<char, Node> IntegerValue =
         Num.Select<Node>(x => new ValueNode<int>(x));
 
-    private static readonly Parser<char, Node> DoubleValue = Real.Select<Node>(x => new ValueNode<decimal>((decimal)x));
+    private static readonly Parser<char, Node> DoubleValue = Real.Select<Node>(x => new ValueNode<decimal>((decimal) x));
 
     private static readonly Parser<char, Node> BooleanValue =
         String("true").Or(String("false")).Select<Node>(x => new ValueNode<bool>(x == "true"));
@@ -99,7 +99,7 @@ public class ExpressionParser
         _function =
             Map(
                 (functionName, args, access) =>
-                    access.Aggregate((Node)new FunctionNode(functionName, args.Where(x => x != null!).ToList()),
+                    access.Aggregate((Node) new FunctionNode(functionName, args.Where(x => x != null!).ToList()),
                         (node, node1) => new AccessNode(node, node1.b, node1.a.HasValue)),
                 AnyCharExcept('(', ')', ',', ']', '[').ManyString().Before(OpenParen),
                 SkipWhitespaces.Then(

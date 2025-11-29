@@ -51,7 +51,7 @@ public class SplitFunctionTest
         var result = evaluator.Evaluate(engine.BuildAst(expression).Value!);
 
         result.Should().BeAssignableTo<IEnumerable<object>>();
-        var actual = ((IEnumerable<object>)result!).Cast<string>().ToArray();
+        var actual = ((IEnumerable<object>) result!).Cast<string>().ToArray();
         actual.Should().BeEquivalentTo(expected);
     }
 
@@ -105,7 +105,7 @@ public class SplitFunctionTest
         var result = evaluator.Evaluate(engine.BuildAst(expression).Value!);
 
         result.Should().BeAssignableTo<IEnumerable<object>>();
-        var actual = ((IEnumerable<object>)result!).ToArray();
+        var actual = ((IEnumerable<object>) result!).ToArray();
         actual.Should().BeEmpty();
     }
 
@@ -120,7 +120,7 @@ public class SplitFunctionTest
         var result = evaluator.Evaluate(engine.BuildAst(expression).Value!);
 
         result.Should().BeAssignableTo<IEnumerable<object>>();
-        var actual = ((IEnumerable<object>)result!).Cast<string>().ToArray();
+        var actual = ((IEnumerable<object>) result!).Cast<string>().ToArray();
         actual.Should().BeEquivalentTo(expected);
     }
 
@@ -134,7 +134,7 @@ public class SplitFunctionTest
         var result = evaluator.Evaluate(engine.BuildAst(expression).Value!);
 
         result.Should().BeAssignableTo<IEnumerable<object>>();
-        var actual = ((IEnumerable<object>)result!).Cast<string>().ToArray();
+        var actual = ((IEnumerable<object>) result!).Cast<string>().ToArray();
         actual.Should().BeEquivalentTo(new[] { "apple", "banana", "orange" });
     }
 
@@ -149,7 +149,7 @@ public class SplitFunctionTest
         var result = evaluator.Evaluate(engine.BuildAst(expression).Value!);
 
         result.Should().BeAssignableTo<IEnumerable<object>>();
-        var actual = ((IEnumerable<object>)result!).Cast<string>().ToArray();
+        var actual = ((IEnumerable<object>) result!).Cast<string>().ToArray();
         actual.Should().BeEquivalentTo(new[] { "test" });
     }
 
