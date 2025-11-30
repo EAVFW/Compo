@@ -49,8 +49,9 @@ public class NestedExpressionAttributeTest
         var parser = serviceProvider.GetRequiredService<ExpressionParser>();
 
         // Act - The nested expression contains a function call
-        // ExpressionEvaluator should parse '@not(false)' to a Node before passing to Execute()
-        var expression = "@testNested('@not(false)')";
+        // ExpressionEvaluator should parse 'not(false)' to a Node before passing to Execute()
+        // Note: @ is automatically prepended by [NestedExpression] handling
+        var expression = "@testNested('not(false)')";
         var ast = parser.BuildAst(expression);
 
         ast.Success.Should().BeTrue("expression should parse successfully");
@@ -75,7 +76,8 @@ public class NestedExpressionAttributeTest
         var parser = serviceProvider.GetRequiredService<ExpressionParser>();
 
         // Act - Use a complex nested expression with nested function calls
-        var expression = "@testNested('@if(true, @not(false), false)')";
+        // Note: @ is NOT used inside nested expressions - it's added automatically
+        var expression = "@testNested('if(true, not(false), false)')";
         var ast = parser.BuildAst(expression);
 
         var result = evaluator.Evaluate(ast.Value!);
@@ -125,13 +127,37 @@ public class NestedExpressionAttributeTest
         var parser = serviceProvider.GetRequiredService<ExpressionParser>();
 
         // Act - Call with two nested expressions
-        var expression = "@testMultipleNested('@not(false)', '@and(true, true)')";
+        // Note: @ is NOT used inside nested expressions - it's added automatically
+        var expression = "@testMultipleNested('not(false)', 'and(true, true)')";
         var ast = parser.BuildAst(expression);
 
         var result = evaluator.Evaluate(ast.Value!);
 
         // Assert
         result.Should().Be("TrueTrue", "both nested expressions should be evaluated and concatenated");
+    }
+
+    [Fact]
+    public void NestedExpression_WithAtSymbol_ShouldStillWork()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddExpressionEngine();
+        services.RegisterFunction<TestNestedExpressionFunction>("testNested");
+
+        var serviceProvider = services.BuildServiceProvider();
+        var evaluator = serviceProvider.GetRequiredService<IExpressionEvaluator>();
+        var parser = serviceProvider.GetRequiredService<ExpressionParser>();
+
+        // Act - Test backward compatibility: @ prefix should still work
+        var expression = "@testNested('@not(false)')";
+        var ast = parser.BuildAst(expression);
+
+        var result = evaluator.Evaluate(ast.Value!);
+
+        // Assert
+        result.Should().Be(true, "nested expression with @ prefix should work for backward compatibility");
     }
 
     [Fact]
@@ -171,8 +197,8 @@ public class NestedExpressionAttributeTest
         var evaluator = serviceProvider.GetRequiredService<IExpressionEvaluator>();
         var parser = serviceProvider.GetRequiredService<ExpressionParser>();
 
-        // Act - Pass invalid expression syntax (missing @ prefix for function)
-        var expression = "@testNested('invalid()')";
+        // Act - Pass invalid expression syntax (malformed function call)
+        var expression = "@testNested('invalid(')";
         var ast = parser.BuildAst(expression);
 
         // Assert

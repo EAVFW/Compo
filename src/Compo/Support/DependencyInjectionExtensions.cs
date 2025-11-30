@@ -68,18 +68,23 @@ public static class DependencyInjectionExtensions
         // T is always a closed type when using generic method
         serviceCollection.AddTransient<T>();
 
-        var argumentTypes = ExtractArgumentTypes(functionType);
-        var parameters = ExtractParameters(functionType);
+        // Register for each IFunction interface the type implements
+        var functionInterfaces = GetFunctionInterfaces(functionType);
+        foreach (var funcInterface in functionInterfaces)
+        {
+            var argumentTypes = ExtractArgumentTypesFromInterface(funcInterface);
+            var parameters = ExtractParametersForInterface(functionType, argumentTypes);
 
-        foreach (var name in names)
-            serviceCollection.AddSingleton(new FunctionRegistration
-            {
-                FunctionType = functionType,
-                FunctionName = name,
-                ArgumentTypes = argumentTypes,
-                Parameters = parameters,
-                IsOpenGeneric = false  // Generic method parameter is always closed
-            });
+            foreach (var name in names)
+                serviceCollection.AddSingleton(new FunctionRegistration
+                {
+                    FunctionType = functionType,
+                    FunctionName = name,
+                    ArgumentTypes = argumentTypes,
+                    Parameters = parameters,
+                    IsOpenGeneric = false  // Generic method parameter is always closed
+                });
+        }
 
         return serviceCollection;
     }
@@ -101,18 +106,23 @@ public static class DependencyInjectionExtensions
             serviceCollection.AddTransient(function);
         }
 
-        var argumentTypes = ExtractArgumentTypes(function);
-        var parameters = ExtractParameters(function);
+        // Register for each IFunction interface the type implements
+        var functionInterfaces = GetFunctionInterfaces(function);
+        foreach (var funcInterface in functionInterfaces)
+        {
+            var argumentTypes = ExtractArgumentTypesFromInterface(funcInterface);
+            var parameters = ExtractParametersForInterface(function, argumentTypes);
 
-        foreach (var name in names)
-            serviceCollection.AddSingleton(new FunctionRegistration
-            {
-                FunctionType = function,
-                FunctionName = name,
-                ArgumentTypes = argumentTypes,
-                Parameters = parameters,
-                IsOpenGeneric = isOpenGeneric
-            });
+            foreach (var name in names)
+                serviceCollection.AddSingleton(new FunctionRegistration
+                {
+                    FunctionType = function,
+                    FunctionName = name,
+                    ArgumentTypes = argumentTypes,
+                    Parameters = parameters,
+                    IsOpenGeneric = isOpenGeneric
+                });
+        }
 
         return serviceCollection;
     }
@@ -133,31 +143,34 @@ public static class DependencyInjectionExtensions
     }
 
     /// <summary>
-    /// Extracts argument types from IFunction interface implementation.
+    /// Gets all IFunction interfaces implemented by a type.
+    /// </summary>
+    private static Type[] GetFunctionInterfaces(Type functionType)
+    {
+        return functionType.GetInterfaces()
+            .Where(i => i.IsGenericType && i.GetGenericTypeDefinition().Name.StartsWith("IFunction"))
+            .ToArray();
+    }
+
+    /// <summary>
+    /// Extracts argument types from a specific IFunction interface.
     /// Returns array of argument types excluding the return type.
     /// For IFunction&lt;T1, T2, ..., TN, TResult&gt;, this contains [T1, T2, ..., TN] (excluding TResult).
     /// </summary>
-    private static Type[]? ExtractArgumentTypes(Type functionType)
+    private static Type[] ExtractArgumentTypesFromInterface(Type functionInterface)
     {
-        var interfaces = functionType.GetInterfaces()
-            .Where(i => i.IsGenericType && i.GetGenericTypeDefinition().Name.StartsWith("IFunction"))
-            .ToArray();
-
-        if (interfaces.Length == 0)
-            return null;
-
-        var genericArgs = interfaces[0].GetGenericArguments();
+        var genericArgs = functionInterface.GetGenericArguments();
         // Last argument is return type, exclude it
         return genericArgs.Take(genericArgs.Length - 1).ToArray();
     }
 
     /// <summary>
-    /// Extracts parameter information from the Execute method.
+    /// Extracts parameter information from the Execute method that matches the given argument types.
     /// Used for checking attributes like [NestedExpression].
     /// </summary>
-    private static ParameterInfo[]? ExtractParameters(Type functionType)
+    private static ParameterInfo[]? ExtractParametersForInterface(Type functionType, Type[] argumentTypes)
     {
-        var executeMethod = functionType.GetMethod("Execute", BindingFlags.Public | BindingFlags.Instance);
+        var executeMethod = functionType.GetMethod("Execute", BindingFlags.Public | BindingFlags.Instance, null, argumentTypes, null);
         return executeMethod?.GetParameters();
     }
 }

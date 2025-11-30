@@ -143,7 +143,16 @@ public class ExpressionEvaluator(
                 if (argNode is ValueNode<string> stringNode)
                 {
                     var parser = (ExpressionParser)serviceProvider.GetService(typeof(ExpressionParser))!;
-                    var parseResult = parser.BuildAst(stringNode.Value);
+
+                    // Prepend @ if not already present - nested expressions follow Compo design
+                    // where @ is only used for the outermost expression trigger
+                    var expressionText = stringNode.Value.TrimStart();
+                    if (!expressionText.StartsWith('@'))
+                    {
+                        expressionText = "@" + expressionText;
+                    }
+
+                    var parseResult = parser.BuildAst(expressionText);
                     if (parseResult.Value == null)
                     {
                         throw new InvalidOperationException($"Failed to parse nested expression: {stringNode.Value}");
