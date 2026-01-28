@@ -139,9 +139,10 @@ public class ExpressionEvaluator(
             // Check for [NestedExpression] attribute
             if (paramInfo?.GetCustomAttribute<NestedExpressionAttribute>() != null)
             {
-                // Parse string argument to Node
+                // Accept either string (parse it) OR direct Node (use as-is)
                 if (argNode is ValueNode<string> stringNode)
                 {
+                    // Parse string argument to Node
                     var parser = (ExpressionParser)serviceProvider.GetService(typeof(ExpressionParser))!;
 
                     // Prepend @ if not already present - nested expressions follow Compo design
@@ -159,9 +160,21 @@ public class ExpressionEvaluator(
                     }
                     args[i] = parseResult.Value;  // Pass Node instead of string
                 }
+                else if (argNode is FunctionNode || argNode is AccessNode)
+                {
+                    // Accept already-parsed Node directly
+                    // This avoids string escaping issues and improves performance
+                    args[i] = argNode;
+                }
+                else if (argNode is ValueNode<int> || argNode is ValueNode<bool> ||
+                         argNode is ValueNode<decimal> || argNode is ValueNode<object>)
+                {
+                    // Accept value nodes directly
+                    args[i] = argNode;
+                }
                 else
                 {
-                    throw new InvalidOperationException($"[NestedExpression] parameter must receive a string value node, got {argNode.GetType().Name}");
+                    throw new InvalidOperationException($"[NestedExpression] parameter must receive a string value node or a Node, got {argNode.GetType().Name}");
                 }
             }
             else if (paramType.IsGenericType && paramType.GetGenericTypeDefinition() == typeof(Lazy<>))
