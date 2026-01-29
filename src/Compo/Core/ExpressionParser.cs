@@ -114,7 +114,7 @@ public class ExpressionParser
                         Char('?').Optional(),
                         Try(Terminal).Or(Rec(() => _function))
                             .Between(OpenBracket, CloseBracket).Or(
-                                Dot.Then(AnyCharExcept('[', ')', '.', '?').ManyString()
+                                Dot.Then(AnyCharExcept('[', ')', '.', '?', ',').ManyString()
                                     .Select<Node>(x => new ValueNode<string>(x))))
                     ).Many()));
 

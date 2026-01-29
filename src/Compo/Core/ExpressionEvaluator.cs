@@ -74,6 +74,23 @@ public class ExpressionEvaluator(
                         throw new KeyNotFoundException($"Key '{key}' not found");
                     }
 
+                    // Check for IAccessNode interface to support custom access semantics
+                    if (evaluatedNode is IAccessNode accessNode)
+                    {
+                        if (accessNode.TryGetValue(key, out var value))
+                        {
+                            return value;
+                        }
+
+                        // If null-conditional operator is used and key is not found, return null
+                        if (n.Nulled)
+                        {
+                            return null;
+                        }
+
+                        throw new KeyNotFoundException($"Key '{key}' not found");
+                    }
+
                     // If null-conditional operator is used and node is not a dictionary, return null
                     if (n.Nulled)
                     {
